@@ -1,100 +1,172 @@
-# SC3K
-This repository contains the code of "[_**SC3K: Self-supervised and Coherent 3D Keypoints Estimation from Rotated, Noisy, and Decimated Point Cloud Data**_](https://openaccess.thecvf.com/content/ICCV2023/papers/Zohaib_SC3K_Self-supervised_and_Coherent_3D_Keypoints_Estimation_from_Rotated_Noisy_ICCV_2023_paper.pdf)", which has been accepted in the ICCV23.
+# SC3K – Self-supervised and Coherent 3D Keypoints Estimation
 
-**Authors:** [Mohammad Zohaib](https://zohaibmohammad.github.io/), [Alessio Del Bue](https://www.iit.it/it/people-details/-/people/alessio-delbue)
-
-<!--- <img align="right" src="images/approach.gif" alt="approach" width="400"/>  
-<img src="images/over_view.gif" alt="over_view" width="600"/>      --> 
+This repository is based on the paper [SC3K: Self-supervised and Coherent 3D Keypoints Estimation from Rotated, Noisy, and Decimated Point Cloud Data](https://openaccess.thecvf.com/content/ICCV2023/papers/Zohaib_SC3K_Self-supervised_and_Coherent_3D_Keypoints_Estimation_from_Rotated_Noisy_ICCV_2023_paper.pdf) (ICCV 2023) and was adapted and evaluated as part of a university project.
 
 <p align="center">
   <img src="images/over_view.gif" alt="over_view" width="600"/>
 </p>
 
+---
 
-**Abstract:**  
-<p align="justify"> This paper proposes a new method to infer keypoints from arbitrary object categories in practical scenarios where point cloud data (PCD) are noisy, down-sampled and arbitrarily rotated. Our proposed model adheres to the following principles: i) keypoints inference is fully unsupervised (no annotation given), ii) keypoints position error should be low and resilient to PCD perturbations (robustness), iii) keypoints should not change their indexes for the intra-class objects (semantic coherence), iv) keypoints should be close to or proximal to PCD surface (compactness). We achieve these desiderata by proposing a new self-supervised training strategy for keypoints estimation that does not assume any a priori knowledge of the object class, and a model architecture with coupled  auxiliary losses that promotes the desired keypoints properties. We compare the keypoints estimated by the proposed approach with those of the state-of-the-art unsupervised approaches. 
-The experiments show that our approach outperforms by estimating keypoints with improved coverage ($+9.41$%) while being semantically consistent ($+4.66$%) that best characterizes the object's 3D shape for downstream tasks. </p>
+## What was done
 
+The original SC3K code was set up, trained and evaluated on the **airplane** class of the KeypointNet dataset. The main focus was on the generation of camera poses, which the paper describes but does not provide. Three different pose generation strategies were implemented and compared:
 
-# Installation
-We highly recommend running this project with a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html). The code is tested on ```Python 3.6.12```, ```Torch 1.10.1```, ```Torchvision 0.11.2```. We recommend using ```Python 3.6+``` and installing all the dependencies as provided in "sc3k_environment.yml". Create a conda environment by following:
-```
-git clone https://github.com/IIT-PAVIS/SC3K.git
+### Pose Generation Approaches
+
+| # | Approach | Description |
+|---|---|---|
+| 1 | **Random Poses** | 24 uniformly random rotation matrices per model (reproduced from literature) |
+| 2 | **Fixed Poses** | 24 identical rotations for all models (no model-specific randomness) |
+| 3 | **Sphere Poses** | 24 LookAt cameras placed on the upper hemisphere (3 elevations × 8 azimuths), as described in the paper |
+
+The sphere pose approach (`generate_canonical_poses.py`) follows the camera convention described in the SC3K paper: cameras are placed at elevations of 15°, 35° and 60° with 8 evenly spaced azimuths each, all looking toward the origin.
+
+---
+
+## Results (Airplane class)
+
+All models were trained for approximately 91–102 epochs (~10 hours each on a laptop GPU).
+
+| Approach | Epochs | DAS ↑ | Pose Error ↓ | Coverage ↑ | Inclusivity ↑ |
+|---|---|---|---|---|---|
+| Random Poses | 78 | 19.80% | 133.3° | 93.19% | 90.63% |
+| Fixed Poses | 102 | 43.53% | 140.7° | 97.19% | 91.80% |
+| **Sphere Poses** | **91** | **61.34%** | **1.02°** | **98.12%** | **86.50%** |
+
+The paper reports ~70% DAS. The remaining gap is likely due to disabled augmentations (`gaussian_noise`, `down_sample`) and the fact that the exact pose angles used in the paper are not published.
+
+---
+
+## Installation
+
+Requires Python 3.6+, PyTorch 1.10.1, and a CUDA-capable GPU.
+
+```bash
+git clone <this-repo>
 cd SC3K
 
 conda env create -f sc3k_environment.yml
 conda activate sc3k
 ```
 
-# Training
-  Set the training parameters using the configuration file "config/config.yaml". For example:
-  ```
-    split: train  # train the network
-    task: generic # transform the PCDs to generic poses before training
-    batch_size: 26 # batch size 
-    class_name: airplane # category to train
+---
 
-  ```
-  Run training as ```python train.py```. Follow the training progress using **train/class_name/**. The best weights will be saved in the same folder with the name **Best_class_name_10kp.pth**.
-  
-# Inference
-  Set the parameters using the configuration file "config/config.yaml" as:
-  ```
-    split: test  # train the network
-    task: generic # **generic** to test on random pose, and **canonical** to test performance on canonical PCDs 
-    batch_size: 1 # batch size 
-    class_name: airplane # category to train
+## Dataset Setup
 
-    save_results: True # if you want to save qualitative results, otherwise keep it False
-    data:
-        best_model_path: '**please set the path of the best weights**'
+Download the [KeypointNet dataset](https://github.com/qq456cvb/KeypointNet) and place it in the following structure:
 
-  ```
-  Please set the "best_model_path" as **train/class_name/Best_class_name_10kp.pth**, and inference as ```python test.py```. Follow the progress using **test/class_name/***
-  
-# Datasets
-We use the KeypointNet dataset that can be downloaded from the [link](https://github.com/qq456cvb/KeypointNet). We use the following structure:
 ```
 dataset/
-  |_ annotation/airplane.json  (all.json that is available in the KeypointNet dataset can also be used)
+  annotations/
+    airplane.json
+  pcds/
+    02691156/
+      *.pcd
+  poses/         ← generate with one of the scripts below
+    02691156/
+      *.npz
+  splits/
+    train.txt
+    val.txt
+    test.txt
+```
 
-  |_ pcds
-      |__ 02691156
-            |__ *.pcd (containing the PCDs in canonical pose)
-            ...
-      |__ id of the second class
-      .
-      .
-      |__ id of the last class
+A small sample set (13 models) is included in `dataset/` for testing the pipeline.
 
-  |_ poses
-      |__ 02691156
-            |__ *.npz (randomly generated 24 poses to transform the input PCDs for training)
-            ...
-      |__ id of the second class
-      .
-      .
-      |__ id of the last class
+---
 
-  |_ splits
-      |__ train.txt
-      |__ val.txt
-      |__ test.txt
+## Pose Generation
+
+Two pose generation scripts are provided:
+
+**Random Poses** (24 random rotations per model, reproducible via seed):
+```bash
+python generate_sc3k_poses.py
+```
+
+**Sphere Poses** (24 LookAt cameras on the upper hemisphere, same for all models):
+```bash
+python generate_canonical_poses.py
+```
+
+Set the output path in the script before running. Then update `poses_root` in `config/config.yaml` accordingly.
+
+---
+
+## Training
+
+Edit `config/config.yaml`:
+
+```yaml
+split: train
+class_name: airplane       # class to train
+batch_size: 8
+max_epoch: 100
+poses_root: /path/to/poses
+```
+
+Then run:
+```bash
+python train.py
+```
+
+Training progress and the best model weights are saved under `runs/`.
+
+---
+
+## Evaluation
+
+Edit `config/config.yaml`:
+
+```yaml
+split: test
+save_results: True
+data:
+  best_model_path: runs/<run_name>/Best_airplane_10kp.pth
+  poses_root: /path/to/poses
+```
+
+Then run:
+```bash
+python test.py
+```
+
+Metrics (DAS, Coverage, Inclusivity, Pose Error) are logged to `runs/<run_name>/test.log`.  
+Visualizations (PLY + PNG) are saved under `runs/<run_name>/generic_visualizations/`.
+
+---
+
+## Visualization
+
+To render existing PLY visualizations from a custom camera angle (no display required):
+
+```bash
+python render_doku.py <run_dir> [elev] [azim]
+# Example:
+python render_doku.py runs/2026-06-23_09-44-40_airplane_baseline_test 25 -60
+```
+
+---
+
+## Pretrained Models
+
+Trained model weights for the airplane class are provided in `models/airplane/`:
 
 ```
-Please download the data and keep it in the above structure. Poses containing intrinsic and extrinsic matrixes of the cameras can be generated by following any of the methods presented in [PointView-GCN](https://github.com/SMohammadi89/PointView-GCN) or [Occupency network](https://github.com/autonomousvision/occupancy_networks). We provide a sample set in the folder "dataset" for an initial start.
+models/
+  airplane/
+    random_poses/   → Best_airplane_10kp.pth   (78 ep,  DAS 19.80%)
+    fix_poses/      → Best_airplane_10kp.pth   (102 ep, DAS 43.53%)
+    sphere_poses/   → Best_airplane_10kp.pth   (91 ep,  DAS 61.34%)
+```
 
+To use a model, set `best_model_path` in `config/config.yaml` to the desired `.pth` file.
 
-# Visualizations
-To save the qualitative results (visualizations), you can run ```test.py```, keeping ```save_results: True``` in the "config.yml" file. You will find the output files in the "test/class_id/*_visualizations". The results should look like:
+---
 
-<p align="center">
-  <img src="images/0_1e40d41905a9be766ed8c57a1980bb26.png" width="400"/><img src="images/144_1d4ff34cdf90d6f9aa2d78d1b8d0b45c.png" width="400"/> <img src="images/240_1c673748703c99207f1f82f6fc8747b8.png" width="400"/><img src="images/288_1d1244abfefc781f35fc197bbabcd5bd.png" width="400"/>
-</p>
+## Original Paper
 
-
-## Cite us:
-If you use this project for your research, please cite as:
 ```
 @inproceedings{zohaib2023sc3k,
   title={SC3K: Self-supervised and Coherent 3D Keypoints Estimation from Rotated, Noisy, and Decimated Point Cloud Data},
@@ -103,14 +175,4 @@ If you use this project for your research, please cite as:
   pages={22509--22519},
   year={2023}
 }
-
 ```
-
-## Previous related works:
-1. [3D Key-Points Estimation from Single-View RGB Images](https://link.springer.com/chapter/10.1007/978-3-031-06430-2_3)
-2. [CDHN: Cross-Domain Hallucination Network for 3D Keypoints Estimation](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4349267)
-   
-## Acknowledgements:
-We would like to acknowledge [Milind Gajanan Padalkar](https://www.iit.it/it/people-details/-/people/milind-padalkar), [Matteo Taiana](https://www.iit.it/it/people-details/-/people/matteo-taiana) and [Pietro Morerio](https://www.iit.it/it/people/pietro-morerio) for fruitful discussions, and [Seyed Saber Mohammadi](https://www.iit.it/it/people-details/-/people/seyed-mohammadi) and [Maryam Saleem](https://sites.google.com/view/maryamsaleem) for their support during the experimental phase. This work has been supported by the projects “RAISE-Robotics and AI for Socio-economic Empowerment” and “European Union-NextGenerationEU”.
-
-

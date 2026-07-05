@@ -265,6 +265,7 @@ class Unsupervised_kpnet(nn.Module):
 
     def forward(self, pc):
         x = self.pointnet_encoder(pc.permute(0, 2, 1))   # [B x 1024 x 2048]
+        #x = self.pointnet_encoder(pc.permute(0, 2, 1)[:, :3, :]) #Entfernen des 4. wetres eine Punktwolke
 
         # Down-sampling from 1024 to M key-points
         x = self.block1(x)          # [B x 512 x 2048]
