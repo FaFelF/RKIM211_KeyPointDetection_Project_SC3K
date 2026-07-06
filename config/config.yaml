@@ -37,11 +37,11 @@ sample_points:  2048
 
 
 data:
-  annot_path: "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K/annotations/${class_name}.json"
-  pcd_root: "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K/pcds"
-  splits_root: "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K/splits"
-  poses_root: "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K_sphere_poses"
-  best_model_path: runs/2026-06-22_20-56-15_airplane_baseline_train/Best_airplane_10kp.pth
+  annot_path: "/path/to/KeypointNet_SC3K/annotations/${class_name}.json"
+  pcd_root: "/path/to/KeypointNet_SC3K/pcds"
+  splits_root: "/path/to/KeypointNet_SC3K/splits"
+  poses_root: "/path/to/KeypointNet_SC3K_sphere_poses"
+  best_model_path: models/airplane/sphere_poses/Best_airplane_10kp.pth
 
 
 hydra:

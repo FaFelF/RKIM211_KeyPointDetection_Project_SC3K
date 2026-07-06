@@ -2,9 +2,9 @@ import numpy as np
 import os
 import json
 
-BASE_PATH = "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K"
+BASE_PATH = "/path/to/KeypointNet_SC3K"
 ANNOT_DIR = os.path.join(BASE_PATH, "annotations")
-OUTPUT_DIR = "/home/felix/Hochschule/RKIM/KI in Prod/Projekt/Data Sets/KeypointNet_SC3K_sphere_poses"
+OUTPUT_DIR = "/path/to/KeypointNet_SC3K_sphere_poses"
 
 # 24 Kameras auf der oberen Halbkugel (wie im ONet/ShapeNet-Standard):
 # 3 Elevationen x 8 Azimute = 24 Blickwinkel, alle auf origin gerichtet.
